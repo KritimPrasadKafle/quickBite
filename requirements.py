@@ -1,0 +1,11 @@
+fastapi
+celery
+uvicorn
+redis
+flower
+pytest
+pytest-cov
+pytest-asyncio
+httpx
+python-dotenv
+pyjwt
