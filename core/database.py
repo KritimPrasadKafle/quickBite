@@ -5,10 +5,10 @@ from sqlalchemy import DateTime, String
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
+from core.config import settings
 
 
-
-DATABASE_URL = "postgresql+asyncpg://kritimprasadkafle:Kritim%40123@localhost/quickbite"
+DATABASE_URL = settings.DATABASE_URL
 
 engine = create_async_engine(
     DATABASE_URL,

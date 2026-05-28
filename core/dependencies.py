@@ -6,6 +6,7 @@ from core.security import Security
 from modules.users.repository import UserRepository
 from modules.users.model import User
 import uuid
+from core.redis import is_token_blacklisted
 
 bearer_scheme = HTTPBearer()
 security = Security()
@@ -15,6 +16,9 @@ user_repo = UserRepository()
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
                            db: AsyncSession = Depends(get_db)) -> User:
     token = credentials.credentials
+
+    if await is_token_blacklisted(token):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked", headers={"WWW-Authenticate": "Bearer"})
 
     payload = security.verify_token(token)
     if not payload:
