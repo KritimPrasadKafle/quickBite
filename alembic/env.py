@@ -6,10 +6,17 @@ from core.database import Base
 from app.modules.users.model import User
 
 from alembic import context
+from core.config import settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+
+config.set_main_option(
+    "sqlalchemy.url",
+    settings.DATABASE_URL.replace("+asyncpg", "").replace("%", "%%")
+)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
