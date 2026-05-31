@@ -1,0 +1,43 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - kafka
+      - minio
+    volumes:
+      - ../app:/app/app
+      - ../core:/app/core
+      - ../shared:/app/shared
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - quickbite
+
+  celery_worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    env_file:
+      - ../.env
+    depends_on:
+      - rabbitmq
+      - redis
+    volumes:
+      - ../app:/app/app
+      - ../core:/app/core
+      - ../shared:/app/shared
+    command: celery -A core.celery_app worker --loglevel=info -Q high_priority,celery
+    networks:
+      - quickbite
+
+networks:
+  quickbite:
+    driver: bridge
