@@ -1,10 +1,11 @@
 from celery import Celery
+from core.config import settings
 
 celery_app = Celery(
     "quickbite",
-    broker = "redis://localhost:6379/0",
-    backend = "redis://localhost:6379/0",
-    include = ["core.tasks"],
+    broker=settings.RABBITMQ_URL,
+    backend=settings.REDIS_URL,
+    include=["core.tasks"],
 )
 
 celery_app.conf.update(
@@ -13,6 +14,19 @@ celery_app.conf.update(
     accept_content=["json"],
     timezone="Asia/Kathmandu",
     enable_utc=True,
-    task_acks_late=True,         
-    task_max_retries=3,           
+    task_acks_late=True,
+    task_queues={
+        "high_priority": {
+            "exchange": "high_priority",
+            "routing_key": "high_priority",
+        },
+        "celery": {
+            "exchange": "celery",
+            "routing_key": "celery",
+        },
+    },
+    task_default_queue="celery",
+    task_routes={
+        "tasks.send_reset_email": {"queue": "high_priority"},
+    },
 )
