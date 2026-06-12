@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, String
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 from core.config import settings
@@ -15,14 +15,14 @@ engine = create_async_engine(
     echo=True
 )
 
-AsyncSessionLocal = sessionmaker(
-    bind=engine,
+async_session_factory = async_sessionmaker(
+    engine,
     class_=AsyncSession,
-    expire_on_commit=False
+    expire_on_commit=False,
 )
 
 async def get_db():
-    async with AsyncSessionLocal() as session:
+    async with async_session_factory() as session:
         yield session
 
 class Base(DeclarativeBase):

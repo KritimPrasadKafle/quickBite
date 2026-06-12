@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
+    ALGORITHM: str
 
     class Config:
         env_file = ".env"

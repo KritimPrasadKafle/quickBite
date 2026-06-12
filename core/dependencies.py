@@ -7,10 +7,32 @@ from modules.users.repository import UserRepository
 from modules.users.model import User
 import uuid
 from core.redis import is_token_blacklisted
+from typing import AsyncGenerator
+from core.unit_of_work import UnitOfWork
+from core.database import async_session_factory
+
 
 bearer_scheme = HTTPBearer()
 security = Security()
 user_repo = UserRepository()
+
+
+
+# Wire the factory into UnitOfWork once at import time
+UnitOfWork.session_factory = async_session_factory
+
+
+async def get_uow() -> AsyncGenerator[UnitOfWork, None]:
+    """
+    FastAPI dependency. Provides one UoW per request.
+
+    The `async with` guarantees:
+      - session opened before handler runs
+      - session closed (and rolled back on exception) after handler returns
+      - even if the handler raises an unhandled exception
+    """
+    async with UnitOfWork() as uow:
+        yield uow
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),

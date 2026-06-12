@@ -40,4 +40,5 @@ services:
 
 networks:
   quickbite:
+    name: docker_quickbite
     driver: bridge

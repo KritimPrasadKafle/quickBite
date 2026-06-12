@@ -62,5 +62,6 @@ volumes:
 
 networks:
   quickbite:
-    external: true
     name: docker_quickbite
+    external: true
+    

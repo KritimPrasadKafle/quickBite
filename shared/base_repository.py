@@ -1,30 +1,41 @@
+# shared/base_repository.py
 import uuid
-from typing import Generic, TypeVar, Type, Optional, List
+from typing import Generic, TypeVar, Type
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from core.database import Base
 
-T = TypeVar("T")
+ModelType = TypeVar("ModelType", bound=Base)
 
-class BaseRepository(Generic[T]):
-    def __init__(self, model: Type[T]):
+
+class BaseRepository(Generic[ModelType]):
+    def __init__(self, model: Type[ModelType], session: AsyncSession):
         self.model = model
+        self.session = session
 
-    async def get(self, db: AsyncSession, id: uuid.UUID) -> Optional[T]:
-        result = await db.execute(select(self.model).where(self.model.id == id))
-        return result.scalars().first()
+    async def get(self, id: uuid.UUID) -> ModelType | None:
+        return await self.session.get(self.model, id)
 
-    async def get_all(
-        self, db: AsyncSession, limit: int = 100, offset: int = 0
-    ) -> List[T]:
-        result = await db.execute(select(self.model).limit(limit).offset(offset))
-        return result.scalars().all()
+    async def get_all(self, limit: int = 100, offset: int = 0) -> list[ModelType]:
+        result = await self.session.execute(
+            select(self.model).limit(limit).offset(offset)
+        )
+        return list(result.scalars().all())
 
-    async def create(self, db: AsyncSession, obj_in: T) -> T:
-        db.add(obj_in)
-        await db.flush()
-        await db.refresh(obj_in)
+    async def create(self, obj_in: ModelType) -> ModelType:
+        self.session.add(obj_in)
+        await self.session.flush()
+        await self.session.refresh(obj_in)
         return obj_in
 
-    async def delete(self, db: AsyncSession, obj: T) -> None:
-        await db.delete(obj)
-        await db.flush()
+    async def update(self, instance: ModelType, **kwargs) -> ModelType:
+        for field, value in kwargs.items():
+            setattr(instance, field, value)
+        self.session.add(instance)
+        await self.session.flush()
+        await self.session.refresh(instance)
+        return instance
+
+    async def delete(self, obj: ModelType) -> None:
+        await self.session.delete(obj)
+        await self.session.flush()
