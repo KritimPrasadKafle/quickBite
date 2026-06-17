@@ -1,9 +1,10 @@
+# core/redis.py
 import redis.asyncio as aioredis
 from jose import jwt, JWTError
+from core.config import settings           # ← add
 
-REDIS_URL = "redis://localhost:6379"
+redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)  # ← use settings
 
-redis_client = aioredis.from_url(REDIS_URL, decode_responses = True)
 
 async def blacklist_token(token: str) -> None:
     """Store token in blacklist until it naturally expires."""

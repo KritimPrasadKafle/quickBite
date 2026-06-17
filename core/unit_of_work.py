@@ -1,6 +1,7 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from modules.users.repository import UserRepository, RefreshTokenRepository
+from modules.restaurants.repository import RestaurantRepository   
 
 
 class UnitOfWork:
@@ -29,6 +30,8 @@ class UnitOfWork:
         # Repos share this single session — one transaction, one commit
         self.users = UserRepository(self.session)
         self.refresh_tokens = RefreshTokenRepository(self.session)
+        self.restaurants = RestaurantRepository(self.session)   
+
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:

@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.log_config import configure_logging
 from core.middleware import RequestIDMiddleware
 from modules.users.router import router as user_router
+from modules.restaurants.router import router as restaurant_router
+
 from shared.base_schema import APIResponse
 configure_logging()
 
@@ -19,6 +21,7 @@ app.add_middleware(
 )
 
 app.include_router(user_router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(restaurant_router, prefix="/api/v1")
 
 @app.get("/health", response_model=APIResponse, tags=["health"])
 async def health():

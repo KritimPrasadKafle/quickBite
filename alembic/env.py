@@ -3,7 +3,10 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from core.database import Base
-from app.modules.users.model import User
+from modules.users.model import User
+from modules.restaurants.model import Restaurant, Category, MenuItem  # noqa
+
+
 
 from alembic import context
 from core.config import settings

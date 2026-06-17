@@ -1,9 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from core.database import get_db
+
 from core.security import Security
-from modules.users.repository import UserRepository
 from modules.users.model import User
 import uuid
 from core.redis import is_token_blacklisted
@@ -14,7 +12,7 @@ from core.database import async_session_factory
 
 bearer_scheme = HTTPBearer()
 security = Security()
-user_repo = UserRepository()
+# user_repo = UserRepository()
 
 
 
@@ -35,12 +33,18 @@ async def get_uow() -> AsyncGenerator[UnitOfWork, None]:
         yield uow
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-                           db: AsyncSession = Depends(get_db)) -> User:
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    uow: UnitOfWork = Depends(get_uow),         
+) -> User:
     token = credentials.credentials
 
     if await is_token_blacklisted(token):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     payload = security.verify_token(token)
     if not payload:
@@ -49,24 +53,28 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(b
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    user_id : str = payload.get("sub")
+
+    user_id: str = payload.get("sub")
     if not user_id:
         raise HTTPException(
-            status_code = status.HTTP_401_UNAUTHORIZED,
-            detail = "Invalid token payload"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
         )
 
-    user = await user_repo.get(db, uuid.UUID(user_id))
-
+    user = await uow.users.get(uuid.UUID(user_id))   # ← instance, not class
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "User no longer exists")
-    
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User no longer exists",
+        )
+
     if not user.is_active:
         raise HTTPException(
-            status_code = status.HTTP_403_FORBIDDEN, detail = "Account is deactivated",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is deactivated",
         )
-    return user
 
+    return user
 def require_role(*roles: str):
     async def role_checker(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role.value not in roles:
